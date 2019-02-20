@@ -1,66 +1,69 @@
+#include "grid.h"
+#include "cell.h"
 #include <iostream>
-#include <cstdlib>
 #include <unistd.h>
+#include <string>
+#include <fstream>
+#include <vector>
 
-const int gridsize = 80;
 
-void Display(bool grid[gridsize+1][gridsize+1]){
-    for(int a = 1; a < gridsize; a++){
-        for(int b = 1; b < gridsize; b++){
-            if(grid[a][b] == true){
-                std::cout << "*";
-            }
-            else{
-                std::cout << " ";
-            }
-            if(b == gridsize-1){
-                std::cout << std::endl;
-            }
-        }
+using namespace std;
+std::vector<std::vector<Cell*>> _grid;
+//gets the arguments entered in command line
+vector<string> getCommandLine(int argc, char **argv){
+    vector<string> result;
+    //makes a vector of the arguments and how many there are
+    for(int i=0; i<argc; i++) {
+        result.push_back(argv[i]);
     }
+    return result;
 }
 
-void CopyGrid (bool grid[gridsize+1][gridsize+1],bool grid2[gridsize+1][gridsize+1]){
-    for(int a =0; a < gridsize; a++){
-        for(int b = 0; b < gridsize; b++){grid2[a][b] = grid[a][b];}
+//main function
+int main(int argc, char **argv)
+{
+    //new grid
+    Grid *grid = new Grid();
+    vector<string> args = getCommandLine(argc,argv);
+    //if there is only one argument in the command line, create a random grid
+    if(args.size()==1){
+        grid->randomGrid();
     }
-}
-
-void liveOrDie(bool grid[gridsize+1][gridsize+1]){
-    bool grid2[gridsize+1][gridsize+1] = {};
-    CopyGrid(grid, grid2);
-    for(int a = 1; a < gridsize; a++){
-        for(int b = 1; b < gridsize; b++){
-            int life = 0;
-        for(int c = -1; c < 2; c++){
-            for(int d = -1; d < 2; d++){
-                if(!(c == 0 && d == 0)){
-                    if(grid2[a+c][b+d]) {++life;}
+    //more than one command, open the name of the specified grid
+    else if (args.size() >1) {
+        ifstream file;
+        char c;
+        char c1;
+        //open the file named
+        file.open(args[1]);
+        for(int y=0; y<24; y++){
+            for (int x=0; x<80; x++){
+                file.get(c);
+                c1=file.peek();
+                //ignore if new line character
+                if(c1=='\n'){
+                    file.ignore(1,'\n');
+                }
+                //within the file if theres a* a cell is set to living
+                if(c=='*'){
+                    grid->getCell(y,x)->setCurrentState(true);
+                }
+                else if(c=='\n') {
+                    
+                }
+                else {
+                    grid->getCell(y,x)->setCurrentState(false);
                 }
             }
         }
-            if(life < 2) {grid[a][b] = false;}
-            else if(life == 3){grid[a][b] = true;}
-            else if(life > 3){grid[a][b] = false;}
-        }
     }
-}
-
-int main(){
-
-    bool grid[gridsize+1][gridsize+1] = {};
-
-    grid[gridsize/2][gridsize/2] = true;
-    grid[gridsize/2-1][gridsize/2] = true;
-    grid[gridsize/2][gridsize/2+1] = true;
-    grid[gridsize/2][gridsize/2-1] = true;
-    grid[gridsize/2+1][gridsize/2+1] = true;
-
-    while (true){
-
-        Display(grid);
-        liveOrDie(grid);
-        system("CLS");
+    
+    //infinite loop that prints the graph, checks for the next state, sleeps for .25 seconds, then reprints
+    for (;;){
+        grid->display();
+        grid->updateGrid();
+        usleep(1000000);
     }
-    sleep(1000);  //usleep
+    delete grid;
 }
+    
